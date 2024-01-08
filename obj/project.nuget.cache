@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "7p4t3olUoV77VVZfoELH4elcKxLdnOBnA1KtU/+ez9IOQ+NvxIOBvvdYUYFLGT9mElp7oFchx5NZ5i6Vc6h3VA==",
+  "dgSpecHash": "Eo9qKD69RDmNXEyLXol85oTFoDg2dYgOrnDTr8exqbGupdeSDe0+H6HlRtZCn7V1J1p6UC0O3jBRuKBFoqWn4w==",
   "success": true,
   "projectFilePath": "C:\\Users\\diarc\\Schule\\FH-WS23\\SWEN\\MonsterTradingCardGame\\MonsterTradingCardGame\\MonsterTradingCardGame.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\diarc\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\diarc\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\8.0.0\\microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\diarc\\.nuget\\packages\\npgsql\\8.0.1\\npgsql.8.0.1.nupkg.sha512"
+  ],
   "logs": []
 }
