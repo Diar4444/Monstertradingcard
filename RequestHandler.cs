@@ -10,68 +10,77 @@ namespace MonsterTradingCardGame
 {
     public class RequestHandler
     {
-        public string Request { get; private set; }
+        public string request { get; private set; }
 
-        public string Response { get; private set; }
+        public string response { get; private set; }
 
-        public RequestHandler(string request)
+        public RequestHandler(string Request)
         {
-            Request = request;
+            request = Request;
 
-            if (request.Contains("GET / "))
+            Handler();
+        }
+
+        private void Handler()
+        {
+            // Extract JSON payload from request
+            int bodyStartIndex = request.IndexOf("{");
+            if (bodyStartIndex >= 0)
             {
-                Console.WriteLine("Start");
-                Response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, World!";
+                // Find the end of the HTTP headers
+                int headerEndIndex = request.IndexOf("\r\n\r\n") + 4;
 
-                string connectionString = "Host=localhost;Username=postgres;Password=Halamadrid1;Database=postgres";
+                // Extract the Content-Length header value
+                string contentLengthHeader = request.Substring(request.IndexOf("Content-Length:") + 15);
+                int contentLength = int.Parse(contentLengthHeader.Substring(0, contentLengthHeader.IndexOf("\r\n")));
 
-                UserRepository userRepository = new UserRepository(connectionString);
+                // Extract the JSON payload based on Content-Length
+                var jsonPayload = request.Substring(bodyStartIndex, contentLength);
+                Console.WriteLine("JSON Payload:");
+                Console.WriteLine(jsonPayload);
 
-                List<User> users = userRepository.GetAllUsers();
-
-                Console.WriteLine("All Users:");
-                foreach (User user in users)
+                try
                 {
-                    Console.WriteLine(user.Username);
+                    // Parse JSON payload
+                    var userObject = JsonSerializer.Deserialize<User>(jsonPayload);
+
+                    UserRepository userrep = new UserRepository(userObject);
+
+                    // Check the endpoint and perform specific logic
+                    if (request.Contains("POST /users"))
+                    {
+                        ResponseMsg responseMsg = new ResponseMsg("users");
+
+                        if (!userrep.DoesUserExist())
+                        {
+                            userrep.AddUser();
+                            response = responseMsg.GetResponseMessage(201);
+                        }
+                        else
+                        {
+                            response = responseMsg.GetResponseMessage(409);
+                        }
+                    }
+                    else if (request.Contains("POST /sessions"))
+                    {
+                        ResponseMsg responseMsg = new ResponseMsg("sessions");
+
+                        if (userrep.UserLogin())
+                        {
+                            response = responseMsg.GetResponseMessage(200);
+                        }
+                        else
+                        {
+                            response = responseMsg.GetResponseMessage(401);
+                        }
+                    }
+
+                    //3 Punkt bei skript
                 }
-            }
-
-            if (request.Contains("POST /users"))
-            {
-                Console.WriteLine("Start");
-
-                // Extract JSON payload from request
-                int bodyStartIndex = request.IndexOf("{");
-                if (bodyStartIndex >= 0)
+                catch (JsonException ex)
                 {
-                    // Find the end of the HTTP headers
-                    int headerEndIndex = request.IndexOf("\r\n\r\n") + 4;
-
-                    // Extract the Content-Length header value
-                    string contentLengthHeader = request.Substring(request.IndexOf("Content-Length:") + 15);
-                    int contentLength = int.Parse(contentLengthHeader.Substring(0, contentLengthHeader.IndexOf("\r\n")));
-
-                    // Extract the JSON payload based on Content-Length
-                    var jsonPayload = request.Substring(bodyStartIndex, contentLength);
-                    Console.WriteLine("JSON Payload:");
-                    Console.WriteLine(jsonPayload);
-
-                    try
-                    {
-                        // Parse JSON payload
-                        var userObject = JsonSerializer.Deserialize<User>(jsonPayload);
-
-                        // Access username and password
-                        Console.WriteLine($"Username: {userObject.Username}, Password: {userObject.Password}");
-                    }
-                    catch (JsonException ex)
-                    {
-                        Console.WriteLine($"Error parsing JSON: {ex.Message}");
-                    }
+                    Console.WriteLine($"Error parsing JSON: {ex.Message}");
                 }
-
-                // Respond to the client
-                Response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, User!";
             }
         }
 
