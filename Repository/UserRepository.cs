@@ -5,9 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
+using MonsterTradingCardGame.Objects;
 
 
-namespace MonsterTradingCardGame
+namespace MonsterTradingCardGame.Repository
 {
     public class UserRepository
     {
@@ -25,14 +26,16 @@ namespace MonsterTradingCardGame
             {
                 connection.Open();
 
-                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (username, password) VALUES (@username, @password);", connection))
+                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (token, username, password) VALUES (@token, @username, @password)", connection))
                 {
+                    string token = User.Username + "-mtcgToken";
+
+                    command.Parameters.AddWithValue("@token", token);
                     command.Parameters.AddWithValue("@username", User.Username);
                     command.Parameters.AddWithValue("@password", HashPassword(User.Password));
 
                     command.ExecuteNonQuery();
                 }
-
                 connection.Close();
             }
         }

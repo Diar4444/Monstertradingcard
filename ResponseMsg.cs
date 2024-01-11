@@ -18,7 +18,6 @@ namespace MonsterTradingCardGame
                 {
                     { 201, "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nUser successfully created\r\n" },
                     { 409, "HTTP/1.1 409 Conflict\r\nContent-Type: text/plain\r\n\r\nUser with same username already registered\r\n" },
-                    // Add more status codes and messages as needed
                 };
             }
             else if(path == "sessions")
@@ -27,7 +26,16 @@ namespace MonsterTradingCardGame
                 {
                     { 200, "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nUser login successful\r\n" },
                     { 401, "HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\n\r\nInvalid username/password provided\r\n" },
-                    // Add more status codes and messages as needed
+                };
+            }
+            else if(path == "packages")
+            {
+                messages = new Dictionary<int, string>
+                {
+                    { 201, "HTTP/1.1 201 Created\r\nContent-Type: text/plain\r\n\r\nPackage and cards successfully created\r\n" },
+                    { 401, "HTTP/1.1 401 Created\r\nContent-Type: text/plain\r\n\r\nAccess token is missing or invalid\r\n" },
+                    { 403, "HTTP/1.1 403 Created\r\nContent-Type: text/plain\r\n\r\nProvided user is not \"admin\"\r\n" },
+                    { 409, "HTTP/1.1 409 Conflict\r\nContent-Type: text/plain\r\n\r\nAt least one card in the packages already exists\r\n" },
                 };
             }
             

@@ -2,6 +2,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using MonsterTradingCardGame.Repository;
 
 namespace MonsterTradingCardGame
 {
@@ -22,6 +23,8 @@ namespace MonsterTradingCardGame
 
             LingerOption lingerOption = new LingerOption(true, 10);
             listenerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, lingerOption);
+
+            DBinitRepository dBinitRepository = new DBinitRepository();
 
             listener.Start();
 

@@ -5,6 +5,8 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using MonsterTradingCardGame.Objects;
+using MonsterTradingCardGame.Repository;
 
 namespace MonsterTradingCardGame
 {
@@ -13,6 +15,8 @@ namespace MonsterTradingCardGame
         public string request { get; private set; }
 
         public string response { get; private set; }
+
+        private const string adminToken = "admin-mtcgToken";
 
         public RequestHandler(string Request)
         {
@@ -23,8 +27,11 @@ namespace MonsterTradingCardGame
 
         private void Handler()
         {
-            // Extract JSON payload from request
+            string authenticationToken = ExtractAuthorizationToken(request);
             int bodyStartIndex = request.IndexOf("{");
+
+            if (request.Contains("POST /packages")) bodyStartIndex = request.IndexOf("[");
+
             if (bodyStartIndex >= 0)
             {
                 // Find the end of the HTTP headers
@@ -41,41 +48,77 @@ namespace MonsterTradingCardGame
 
                 try
                 {
-                    // Parse JSON payload
-                    var userObject = JsonSerializer.Deserialize<User>(jsonPayload);
-
-                    UserRepository userrep = new UserRepository(userObject);
-
-                    // Check the endpoint and perform specific logic
-                    if (request.Contains("POST /users"))
+                    if (request.Contains("POST /users")|| request.Contains("POST /sessions"))
                     {
-                        ResponseMsg responseMsg = new ResponseMsg("users");
+                        // Parse JSON payload
+                        var userObject = JsonSerializer.Deserialize<User>(jsonPayload);
 
-                        if (!userrep.DoesUserExist())
+                        UserRepository userrep = new UserRepository(userObject);
+
+                        // Check the endpoint and perform specific logic
+                        if (request.Contains("POST /users"))
                         {
-                            userrep.AddUser();
+                            ResponseMsg responseMsg = new ResponseMsg("users");
+
+                            if (!userrep.DoesUserExist())
+                            {
+                                userrep.AddUser();
+                                response = responseMsg.GetResponseMessage(201);
+                            }
+                            else
+                            {
+                                response = responseMsg.GetResponseMessage(409);
+                            }
+                        }
+                        else if (request.Contains("POST /sessions"))
+                        {
+                            ResponseMsg responseMsg = new ResponseMsg("sessions");
+
+                            if (userrep.UserLogin())
+                            {
+                                response = responseMsg.GetResponseMessage(200) + "Token: " + userObject.Username + "-mtcgToken";
+                            }
+                            else
+                            {
+                                response = responseMsg.GetResponseMessage(401);
+                            }
+                        }
+                    }
+                    else if (request.Contains("POST /packages"))
+                    {
+                        ResponseMsg responseMsg = new ResponseMsg("packages");
+
+                        if(authenticationToken == adminToken)
+                        {
+                            PackageRepository packageRepository = new PackageRepository();
+
+                            int lastPackageID = packageRepository.GetPackageId();
+
+                            // Deserialize the JSON payload into a list of cards
+                            List<Card> cards = JsonSerializer.Deserialize<List<Card>>(jsonPayload);
+
+                            // Create a package
+                            var package = new Package { PackageId = lastPackageID, Bought = false };
+
+                            // Add the cards to the package
+                            package.Cards.AddRange(cards);
+
+                            packageRepository.AddPackage(package);
+                            
                             response = responseMsg.GetResponseMessage(201);
                         }
                         else
                         {
-                            response = responseMsg.GetResponseMessage(409);
+                            response = responseMsg.GetResponseMessage(401); 
                         }
                     }
-                    else if (request.Contains("POST /sessions"))
+
+                    else if (request.Contains("POST /transactions/packages"))
                     {
-                        ResponseMsg responseMsg = new ResponseMsg("sessions");
-
-                        if (userrep.UserLogin())
-                        {
-                            response = responseMsg.GetResponseMessage(200);
-                        }
-                        else
-                        {
-                            response = responseMsg.GetResponseMessage(401);
-                        }
+                        //KA wohin aber user braucht geld undsw
                     }
 
-                    //3 Punkt bei skript
+                    //4 Punkt bei skript
                 }
                 catch (JsonException ex)
                 {
@@ -84,6 +127,23 @@ namespace MonsterTradingCardGame
             }
         }
 
-        
+        private string ExtractAuthorizationToken(string request)
+        {
+            const string authorizationHeader = "Authorization: Bearer ";
+            int startIndex = request.IndexOf(authorizationHeader);
+
+            if (startIndex >= 0)
+            {
+                startIndex += authorizationHeader.Length;
+                int endIndex = request.IndexOf("\r\n", startIndex);
+
+                if (endIndex >= 0)
+                {
+                    return request.Substring(startIndex, endIndex - startIndex);
+                }
+            }
+
+            return null;
+        }
     }
 }
