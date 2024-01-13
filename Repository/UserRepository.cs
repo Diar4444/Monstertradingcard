@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 using MonsterTradingCardGame.Objects;
+using System.Drawing;
 
 
 namespace MonsterTradingCardGame.Repository
@@ -15,6 +16,7 @@ namespace MonsterTradingCardGame.Repository
         private string connectionString = "Host=localhost;Username=postgres;Password=Halamadrid1;Database=postgres";
         User User { get; set; }
 
+        public UserRepository() { }
         public UserRepository(User user)
         {
             User = user;
@@ -26,13 +28,14 @@ namespace MonsterTradingCardGame.Repository
             {
                 connection.Open();
 
-                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (token, username, password) VALUES (@token, @username, @password)", connection))
+                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (token, username, password, coins) VALUES (@token, @username, @password, @coins)", connection))
                 {
                     string token = User.Username + "-mtcgToken";
 
                     command.Parameters.AddWithValue("@token", token);
                     command.Parameters.AddWithValue("@username", User.Username);
-                    command.Parameters.AddWithValue("@password", HashPassword(User.Password));
+                    command.Parameters.AddWithValue("@password", HashPassword(User.Password)); 
+                    command.Parameters.AddWithValue("@coins", 20);
 
                     command.ExecuteNonQuery();
                 }
@@ -89,6 +92,59 @@ namespace MonsterTradingCardGame.Repository
                     connection.Close();
                     return false;
                 }
+            }
+        }
+
+        public int GetCoins(string username)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand("SELECT coins FROM users WHERE username = @username;", connection))
+                {
+                    command.Parameters.AddWithValue("@username", username);
+
+                    using (NpgsqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            int storedCoins = reader.GetInt32(0); 
+                            connection.Close();
+                            return storedCoins;
+                        }
+                    }
+                    connection.Close();
+                    return -1;
+                }
+            }
+        }
+
+        public bool UpdateCoins(int coins,string username)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand("UPDATE users SET coins = @newCoins WHERE username = @username;", connection))
+                {
+
+                    command.Parameters.AddWithValue("@newCoins", coins);
+                    command.Parameters.AddWithValue("@username", username);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    if (rowsAffected > 0)
+                    {
+                        // Update successful
+                        connection.Close();
+                        return true;
+                    }
+                }
+
+                // No matching user
+                connection.Close();
+                return false;
             }
         }
 

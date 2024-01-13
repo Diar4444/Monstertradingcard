@@ -24,7 +24,14 @@ namespace MonsterTradingCardGame
             LingerOption lingerOption = new LingerOption(true, 10);
             listenerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, lingerOption);
 
-            DBinitRepository dBinitRepository = new DBinitRepository();
+            Console.Write("Do you want to init(reset) the DB?(Y or N)");
+            char resetDB = Console.ReadKey().KeyChar;
+
+            if (resetDB == 'Y')
+            {
+                DBinitRepository dBinitRepository = new DBinitRepository();
+            }
+            Console.WriteLine();
 
             listener.Start();
 

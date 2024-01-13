@@ -31,7 +31,7 @@ namespace MonsterTradingCardGame
             int bodyStartIndex = request.IndexOf("{");
 
             if (request.Contains("POST /packages")) bodyStartIndex = request.IndexOf("[");
-
+            
             if (bodyStartIndex >= 0)
             {
                 // Find the end of the HTTP headers
@@ -113,16 +113,48 @@ namespace MonsterTradingCardGame
                         }
                     }
 
-                    else if (request.Contains("POST /transactions/packages"))
-                    {
-                        //KA wohin aber user braucht geld undsw
-                    }
-
-                    //4 Punkt bei skript
                 }
                 catch (JsonException ex)
                 {
                     Console.WriteLine($"Error parsing JSON: {ex.Message}");
+                }
+            }
+            else if (request.Contains("POST /transactions/packages"))
+            {
+                ResponseMsg responseMsg = new ResponseMsg("transactions/packages");
+                PackageRepository packageRepository = new PackageRepository();
+                List<int> packagelist = new List<int>();
+                UserRepository userRepository = new UserRepository();
+                string token = ExtractAuthorizationToken(request);
+                int indexOfHyphen = token.IndexOf('-');
+                string username = "";
+                int coins;
+
+                if (indexOfHyphen != -1) username = token.Substring(0, indexOfHyphen);
+                coins = userRepository.GetCoins(username);
+
+                packagelist = packageRepository.IsPackageAvailable();
+
+                if (packagelist.Count > 0)
+                {
+                    if (coins >= 5)
+                    { 
+                        userRepository.UpdateCoins(coins - 5, username);
+
+                        packageRepository.BuyPackage(packagelist[0],username);
+
+                        //Punkt 5 im skript und mach errorhandling wegen curls empty
+
+                        response = responseMsg.GetResponseMessage(200);
+                    }
+                    else
+                    {
+                        response = responseMsg.GetResponseMessage(403);
+                    }
+                }
+                else
+                {
+                    response = responseMsg.GetResponseMessage(404);
                 }
             }
         }

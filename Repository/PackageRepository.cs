@@ -63,6 +63,69 @@ namespace MonsterTradingCardGame.Repository
             }
         }
 
+        public List<int> IsPackageAvailable()
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand("SELECT package_id FROM packages WHERE bought = false;", connection))
+                {
+                    using (NpgsqlDataReader reader = command.ExecuteReader())
+                    {
+                        List<int> packageIds = new List<int>();
+
+                        while (reader.Read())
+                        {
+                            int packageId = reader.GetInt32(0);
+                            packageIds.Add(packageId);
+                        }
+                        connection.Close();
+                        return packageIds;
+                    }
+                }
+
+                connection.Close();
+                return null;
+            }
+
+        }
+
+        public void BuyPackage(int packageId, string username)
+        {
+            Console.WriteLine(packageId);
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                
+                using (NpgsqlCommand updateCommand = new NpgsqlCommand("UPDATE packages SET bought = true WHERE package_id = @packageId;", connection))
+                {
+                    updateCommand.Parameters.AddWithValue("@packageId", packageId);
+                    updateCommand.ExecuteNonQuery();
+                }
+                
+                
+                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO user_packages (username, package_id) VALUES (@username, @packageId);", connection))
+                {
+                    command.Parameters.AddWithValue("@username", username);
+                    command.Parameters.AddWithValue("@packageId", packageId);
+
+                    try
+                    {
+                        command.ExecuteNonQuery();
+                        Console.WriteLine($"User '{username}' assigned package ID '{packageId}'.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error inserting into user_packages: {ex.Message}");
+                    }
+                }
+                
+                connection.Close();
+            }
+        }
+
 
         private void SavePackage(NpgsqlConnection connection, NpgsqlTransaction transaction, Package package)
         {

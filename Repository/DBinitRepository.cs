@@ -13,13 +13,15 @@ namespace MonsterTradingCardGame.Repository
 
         public DBinitRepository()
         {
+            DropTable(connectionString, "user_packages");
+            DropTable(connectionString, "cards");
             DropTable(connectionString, "packages");
             DropTable(connectionString, "users");
-            DropTable(connectionString, "cards");
 
-            CreateTable(connectionString, "users", "CREATE TABLE IF NOT EXISTS users (token varchar(255) PRIMARY KEY, username VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL);");
+            CreateTable(connectionString, "users", "CREATE TABLE IF NOT EXISTS users (token varchar(255) ,username VARCHAR(255) NOT NULL PRIMARY KEY UNIQUE,password VARCHAR(255) NOT NULL,coins int NOT NULL);");
             CreateTable(connectionString, "packages", "CREATE TABLE IF NOT EXISTS packages (package_id SERIAL PRIMARY KEY, bought BOOLEAN NOT NULL);");
             CreateTable(connectionString, "cards", "CREATE TABLE IF NOT EXISTS cards (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255) NOT NULL, damage DOUBLE PRECISION NOT NULL, package_id INTEGER REFERENCES packages(package_id));");
+            CreateTable(connectionString, "user_packages", "CREATE TABLE IF NOT EXISTS user_packages (username VARCHAR(255) REFERENCES users(username), package_id INT REFERENCES packages(package_id), PRIMARY KEY (username, package_id));");
         }
 
         private void DropTable(string connectionString, string tableName)
@@ -61,7 +63,5 @@ namespace MonsterTradingCardGame.Repository
                 }
             }
         }
-
-
     }
 }
