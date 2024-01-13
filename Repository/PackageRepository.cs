@@ -93,8 +93,6 @@ namespace MonsterTradingCardGame.Repository
 
         public void BuyPackage(int packageId, string username)
         {
-            Console.WriteLine(packageId);
-
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
@@ -114,7 +112,6 @@ namespace MonsterTradingCardGame.Repository
                     try
                     {
                         command.ExecuteNonQuery();
-                        Console.WriteLine($"User '{username}' assigned package ID '{packageId}'.");
                     }
                     catch (Exception ex)
                     {

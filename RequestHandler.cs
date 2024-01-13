@@ -18,6 +18,17 @@ namespace MonsterTradingCardGame
 
         private const string adminToken = "admin-mtcgToken";
 
+        private PackageRepository packageRepository = new PackageRepository();
+
+        private UserRepository userRepository = new UserRepository();
+
+        private ResponseMsg responseMsgUser = new ResponseMsg("users");
+        private ResponseMsg responseMsgSession = new ResponseMsg("sessions");
+        private ResponseMsg responseMsgPackages = new ResponseMsg("packages");
+        private ResponseMsg responseMsgBuy = new ResponseMsg("transactions/packages");
+
+
+
         public RequestHandler(string Request)
         {
             request = Request;
@@ -27,28 +38,25 @@ namespace MonsterTradingCardGame
 
         private void Handler()
         {
-            string authenticationToken = ExtractAuthorizationToken(request);
-            int bodyStartIndex = request.IndexOf("{");
+            try {
+                string authenticationToken = ExtractAuthorizationToken(request);
+                int bodyStartIndex = request.IndexOf("{");
 
-            if (request.Contains("POST /packages")) bodyStartIndex = request.IndexOf("[");
-            
-            if (bodyStartIndex >= 0)
-            {
-                // Find the end of the HTTP headers
-                int headerEndIndex = request.IndexOf("\r\n\r\n") + 4;
+                if (request.Contains("POST /packages")) bodyStartIndex = request.IndexOf("[");
 
-                // Extract the Content-Length header value
-                string contentLengthHeader = request.Substring(request.IndexOf("Content-Length:") + 15);
-                int contentLength = int.Parse(contentLengthHeader.Substring(0, contentLengthHeader.IndexOf("\r\n")));
-
-                // Extract the JSON payload based on Content-Length
-                var jsonPayload = request.Substring(bodyStartIndex, contentLength);
-                Console.WriteLine("JSON Payload:");
-                Console.WriteLine(jsonPayload);
-
-                try
+                if (bodyStartIndex >= 0)
                 {
-                    if (request.Contains("POST /users")|| request.Contains("POST /sessions"))
+                    // Find the end of the HTTP headers
+                    int headerEndIndex = request.IndexOf("\r\n\r\n") + 4;
+
+                    // Extract the Content-Length header value
+                    string contentLengthHeader = request.Substring(request.IndexOf("Content-Length:") + 15);
+                    int contentLength = int.Parse(contentLengthHeader.Substring(0, contentLengthHeader.IndexOf("\r\n")));
+
+                    // Extract the JSON payload based on Content-Length
+                    var jsonPayload = request.Substring(bodyStartIndex, contentLength);
+
+                    if (request.Contains("POST /users") || request.Contains("POST /sessions"))
                     {
                         // Parse JSON payload
                         var userObject = JsonSerializer.Deserialize<User>(jsonPayload);
@@ -58,40 +66,30 @@ namespace MonsterTradingCardGame
                         // Check the endpoint and perform specific logic
                         if (request.Contains("POST /users"))
                         {
-                            ResponseMsg responseMsg = new ResponseMsg("users");
 
                             if (!userrep.DoesUserExist())
                             {
                                 userrep.AddUser();
-                                response = responseMsg.GetResponseMessage(201);
+                                response = responseMsgUser.GetResponseMessage(201);
                             }
-                            else
-                            {
-                                response = responseMsg.GetResponseMessage(409);
-                            }
+                            else response = responseMsgUser.GetResponseMessage(409);
                         }
                         else if (request.Contains("POST /sessions"))
                         {
-                            ResponseMsg responseMsg = new ResponseMsg("sessions");
-
                             if (userrep.UserLogin())
                             {
-                                response = responseMsg.GetResponseMessage(200) + "Token: " + userObject.Username + "-mtcgToken";
+                                response = responseMsgSession.GetResponseMessage(200) + "Token: " + userObject.Username + "-mtcgToken";
                             }
                             else
                             {
-                                response = responseMsg.GetResponseMessage(401);
+                                response = responseMsgSession.GetResponseMessage(401);
                             }
                         }
                     }
                     else if (request.Contains("POST /packages"))
                     {
-                        ResponseMsg responseMsg = new ResponseMsg("packages");
-
-                        if(authenticationToken == adminToken)
+                        if (authenticationToken == adminToken)
                         {
-                            PackageRepository packageRepository = new PackageRepository();
-
                             int lastPackageID = packageRepository.GetPackageId();
 
                             // Deserialize the JSON payload into a list of cards
@@ -104,58 +102,53 @@ namespace MonsterTradingCardGame
                             package.Cards.AddRange(cards);
 
                             packageRepository.AddPackage(package);
-                            
-                            response = responseMsg.GetResponseMessage(201);
+
+                            response = responseMsgPackages.GetResponseMessage(201);
+                        }
+                        else response = responseMsgPackages.GetResponseMessage(401);
+                    }
+                }
+                else if (request.Contains("POST /transactions/packages"))
+                {
+                    List<int> packagelist = new List<int>();
+                    int coins;
+                    string username = GetUsername(authenticationToken);
+
+                    //Ersatz weil das mit token im curl script komisch ist such ich nach username direkt
+
+                    coins = userRepository.GetCoins(username);
+
+                    packagelist = packageRepository.IsPackageAvailable();
+
+                    if (packagelist.Count > 0)
+                    {
+                        if (coins >= 5)
+                        {
+                            userRepository.UpdateCoins(coins - 5, username);
+
+                            packageRepository.BuyPackage(packagelist[0], username);
+
+                            response = responseMsgBuy.GetResponseMessage(200);
                         }
                         else
                         {
-                            response = responseMsg.GetResponseMessage(401); 
+                            response = responseMsgBuy.GetResponseMessage(403);
                         }
-                    }
-
-                }
-                catch (JsonException ex)
-                {
-                    Console.WriteLine($"Error parsing JSON: {ex.Message}");
-                }
-            }
-            else if (request.Contains("POST /transactions/packages"))
-            {
-                ResponseMsg responseMsg = new ResponseMsg("transactions/packages");
-                PackageRepository packageRepository = new PackageRepository();
-                List<int> packagelist = new List<int>();
-                UserRepository userRepository = new UserRepository();
-                string token = ExtractAuthorizationToken(request);
-                int indexOfHyphen = token.IndexOf('-');
-                string username = "";
-                int coins;
-
-                if (indexOfHyphen != -1) username = token.Substring(0, indexOfHyphen);
-                coins = userRepository.GetCoins(username);
-
-                packagelist = packageRepository.IsPackageAvailable();
-
-                if (packagelist.Count > 0)
-                {
-                    if (coins >= 5)
-                    { 
-                        userRepository.UpdateCoins(coins - 5, username);
-
-                        packageRepository.BuyPackage(packagelist[0],username);
-
-                        //Punkt 5 im skript und mach errorhandling wegen curls empty
-
-                        response = responseMsg.GetResponseMessage(200);
                     }
                     else
                     {
-                        response = responseMsg.GetResponseMessage(403);
+                        response = responseMsgBuy.GetResponseMessage(404);
                     }
                 }
-                else
+                else if (request.Contains("GET /cards"))
                 {
-                    response = responseMsg.GetResponseMessage(404);
+                    Console.WriteLine(GetUsername(authenticationToken));
                 }
+
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"Error parsing JSON: {ex.Message}");
             }
         }
 
@@ -176,6 +169,23 @@ namespace MonsterTradingCardGame
             }
 
             return null;
+        }
+
+        private string GetUsername(string token)
+        {
+            string username = "";
+
+            try
+            {
+                int indexOfHyphen = token.IndexOf('-');
+                if (indexOfHyphen != -1) username = token.Substring(0, indexOfHyphen);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+            
+            return username;
         }
     }
 }

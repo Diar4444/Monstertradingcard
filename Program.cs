@@ -12,19 +12,18 @@ namespace MonsterTradingCardGame
         {
             Console.WriteLine("Server Started!");
 
-            await listenerOption(10001);
+            await ListenerOption(10001);
         }
 
-        public static async Task listenerOption(int port)
+        public static async Task ListenerOption(int port)
         {
-            Console.WriteLine("listening on {0}, port {1}", IPAddress.Any, port);
+            Console.WriteLine($"Listening on {IPAddress.Any}, port {port}");
             TcpListener listener = new TcpListener(IPAddress.Any, port);
-            Socket listenerSocket = listener.Server;
 
             LingerOption lingerOption = new LingerOption(true, 10);
-            listenerSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, lingerOption);
+            listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Linger, lingerOption);
 
-            Console.Write("Do you want to init(reset) the DB?(Y or N)");
+            Console.Write("Do you want to init(reset) the DB? (Y or N)");
             char resetDB = Console.ReadKey().KeyChar;
 
             if (resetDB == 'Y')
@@ -37,26 +36,47 @@ namespace MonsterTradingCardGame
 
             while (true)
             {
-                using (var client = await listener.AcceptTcpClientAsync())
-                {
-                    _ = ProcessRequestAsync(client);
-                }
+                TcpClient client = await listener.AcceptTcpClientAsync();
+
+                _ = Task.Run(() => ProcessRequestAsync(client));
             }
         }
 
         private static async Task ProcessRequestAsync(TcpClient client)
         {
-            using (var networkStream = client.GetStream())
+            try
             {
-                var requestBytes = new byte[1024];
-                await networkStream.ReadAsync(requestBytes, 0, requestBytes.Length);
-                var request = Encoding.UTF8.GetString(requestBytes);
+                using (var networkStream = client.GetStream())
+                {
+                    var requestBytes = new byte[1024];
+                    int bytesRead = await networkStream.ReadAsync(requestBytes, 0, requestBytes.Length);
 
-                RequestHandler requestHandler = new RequestHandler(request);
+                    if (bytesRead > 0)
+                    {
+                        var request = Encoding.UTF8.GetString(requestBytes, 0, bytesRead);
+                        RequestHandler requestHandler = new RequestHandler(request);
 
-                byte[] resp = Encoding.UTF8.GetBytes(requestHandler.response);
-                await networkStream.WriteAsync(resp, 0, resp.Length);
+                        Console.WriteLine("Request: "+ request);
+                        for(int a = 0; a < 50; a++)Console.Write("_");
+                        Console.WriteLine();
+                        Console.WriteLine("Response: " + requestHandler.response);
+                        for (int b = 0; b < 50; b++) Console.Write("_");
+                        Console.WriteLine();
+
+                        byte[] resp = Encoding.UTF8.GetBytes(requestHandler.response);
+                        await networkStream.WriteAsync(resp, 0, resp.Length);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error processing request: {ex.Message}");
+            }
+            finally
+            {
+                client.Close();
             }
         }
+
     }
 }

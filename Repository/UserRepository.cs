@@ -54,7 +54,6 @@ namespace MonsterTradingCardGame.Repository
 
                     int count = Convert.ToInt32(command.ExecuteScalar());
 
-                    // Check if the count is greater than 0
                     connection.Close();
                     return count > 0;
                 }
