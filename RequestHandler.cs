@@ -22,10 +22,15 @@ namespace MonsterTradingCardGame
 
         private UserRepository userRepository = new UserRepository();
 
+        private DeckRepository deckRepository = new DeckRepository();
+
         private ResponseMsg responseMsgUser = new ResponseMsg("users");
         private ResponseMsg responseMsgSession = new ResponseMsg("sessions");
         private ResponseMsg responseMsgPackages = new ResponseMsg("packages");
         private ResponseMsg responseMsgBuy = new ResponseMsg("transactions/packages");
+        private ResponseMsg responseMsgShowCards = new ResponseMsg("cards");
+        private ResponseMsg responseMsgShowDeck = new ResponseMsg("deck");
+
 
 
 
@@ -78,7 +83,7 @@ namespace MonsterTradingCardGame
                         {
                             if (userrep.UserLogin())
                             {
-                                response = responseMsgSession.GetResponseMessage(200) + "Token: " + userObject.Username + "-mtcgToken";
+                                response = responseMsgSession.GetResponseMessage(200) + "Token: " + userObject.Username + "-mtcgToken\r\n";
                             }
                             else
                             {
@@ -88,22 +93,26 @@ namespace MonsterTradingCardGame
                     }
                     else if (request.Contains("POST /packages"))
                     {
-                        if (authenticationToken == adminToken)
+                        if(authenticationToken.Length > 0)
                         {
-                            int lastPackageID = packageRepository.GetPackageId();
+                            if (authenticationToken == adminToken)
+                            {
+                                int lastPackageID = packageRepository.GetPackageId();
 
-                            // Deserialize the JSON payload into a list of cards
-                            List<Card> cards = JsonSerializer.Deserialize<List<Card>>(jsonPayload);
+                                // Deserialize the JSON payload into a list of cards
+                                List<Card> cards = JsonSerializer.Deserialize<List<Card>>(jsonPayload);
 
-                            // Create a package
-                            var package = new Package { PackageId = lastPackageID, Bought = false };
+                                // Create a package
+                                var package = new Package { PackageId = lastPackageID, Bought = false };
 
-                            // Add the cards to the package
-                            package.Cards.AddRange(cards);
+                                // Add the cards to the package
+                                package.Cards.AddRange(cards);
 
-                            packageRepository.AddPackage(package);
+                                packageRepository.AddPackage(package);
 
-                            response = responseMsgPackages.GetResponseMessage(201);
+                                response = responseMsgPackages.GetResponseMessage(201);
+                            }
+                            else response = responseMsgPackages.GetResponseMessage(403);
                         }
                         else response = responseMsgPackages.GetResponseMessage(401);
                     }
@@ -142,9 +151,39 @@ namespace MonsterTradingCardGame
                 }
                 else if (request.Contains("GET /cards"))
                 {
-                    Console.WriteLine(GetUsername(authenticationToken));
-                }
+                    if (userRepository.DoesTokenExist(authenticationToken))
+                    {
+                        string userCards = userRepository.GetUserCardsJSON(authenticationToken);
 
+                        if (userCards.Length > 2)
+                        {
+                            response = responseMsgShowCards.GetResponseMessage(200) + userCards + "\r\n";
+                        }
+                        else
+                        {
+                            response = responseMsgShowCards.GetResponseMessage(204);
+                        }
+                    }
+                    else response = responseMsgShowCards.GetResponseMessage(401);
+                }
+                else if (request.Contains("GET /deck"))
+                {
+                    if (userRepository.DoesTokenExist(authenticationToken))
+                    {
+                        string showdeck = deckRepository.GetCardsFromDeckJson(authenticationToken);
+
+                        if (showdeck.Length > 2)
+                        {
+                            //Punkt 11 
+                            Console.WriteLine(showdeck);
+                        }
+                        else
+                        {
+                            response = responseMsgShowDeck.GetResponseMessage(204);
+                        }
+                    }
+                    else response = responseMsgShowDeck.GetResponseMessage(401);
+                }
             }
             catch (JsonException ex)
             {
@@ -168,22 +207,15 @@ namespace MonsterTradingCardGame
                 }
             }
 
-            return null;
+            return "";
         }
 
         private string GetUsername(string token)
         {
             string username = "";
+            int indexOfHyphen = token.IndexOf('-');
 
-            try
-            {
-                int indexOfHyphen = token.IndexOf('-');
-                if (indexOfHyphen != -1) username = token.Substring(0, indexOfHyphen);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
+            if (indexOfHyphen != -1) username = token.Substring(0, indexOfHyphen);
             
             return username;
         }

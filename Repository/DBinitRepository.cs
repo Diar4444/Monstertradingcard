@@ -16,6 +16,7 @@ namespace MonsterTradingCardGame.Repository
 
         public DBinitRepository()
         {
+            DropTable("deck");
             DropTable("user_packages");
             DropTable("cards");
             DropTable("packages");
@@ -25,6 +26,7 @@ namespace MonsterTradingCardGame.Repository
             CreateTable("packages", "CREATE TABLE IF NOT EXISTS packages (package_id SERIAL PRIMARY KEY, bought BOOLEAN NOT NULL);");
             CreateTable("cards", "CREATE TABLE IF NOT EXISTS cards (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255) NOT NULL, damage DOUBLE PRECISION NOT NULL, package_id INTEGER REFERENCES packages(package_id));");
             CreateTable("user_packages", "CREATE TABLE IF NOT EXISTS user_packages (username VARCHAR(255) REFERENCES users(username), package_id INT REFERENCES packages(package_id), PRIMARY KEY (username, package_id));");
+            CreateTable("deck", "CREATE TABLE IF NOT EXISTS deck (username VARCHAR(255) REFERENCES users(username),card_id VARCHAR(255) REFERENCES cards(id),PRIMARY KEY (username, card_id));");
         }
 
         private string getConnectionString()

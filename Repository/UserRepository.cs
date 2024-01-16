@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using MonsterTradingCardGame.Objects;
 using System.Drawing;
+using System.Xml;
+using System.Text.Json;
+
 
 
 namespace MonsterTradingCardGame.Repository
@@ -14,7 +17,7 @@ namespace MonsterTradingCardGame.Repository
     public class UserRepository
     {
         private string connectionString = "Host=localhost;Username=postgres;Password=Halamadrid1;Database=postgres";
-        User User { get; set; }
+        private User User { get; set; }
 
         public UserRepository() { }
         public UserRepository(User user)
@@ -146,6 +149,67 @@ namespace MonsterTradingCardGame.Repository
                 return false;
             }
         }
+
+        public string GetUserCardsJSON(string token)
+        {
+            List<Card> userCards = new List<Card>();
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand(
+                    "SELECT cards.id, cards.name, cards.damage " +
+                    "FROM users " +
+                    "JOIN user_packages ON users.username = user_packages.username " +
+                    "JOIN cards ON user_packages.package_id = cards.package_id " +
+                    "WHERE users.token = @token;", connection))
+                    { 
+                    command.Parameters.AddWithValue("@token", token);
+
+                    using (NpgsqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Card card = new Card
+                            {
+                                Id = reader.GetString(0),
+                                Name = reader.GetString(1),
+                                Damage = reader.GetDouble(2)
+                            };
+
+                            userCards.Add(card);
+                        }
+                    }
+                }
+
+                string jsonResult = JsonSerializer.Serialize(userCards, new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
+                return jsonResult;
+            }
+        }
+
+        public bool DoesTokenExist(string token)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand("SELECT COUNT(*) FROM users WHERE token = @token;", connection))
+                {
+                    command.Parameters.AddWithValue("@token", token);
+
+                    int count = Convert.ToInt32(command.ExecuteScalar());
+
+                    connection.Close();
+                    return count > 0;
+                }
+            }
+        }
+
 
         private string HashPassword(string password)
         {
