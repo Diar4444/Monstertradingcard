@@ -33,11 +33,12 @@ namespace MonsterTradingCardGame
 
         private void Handler()
         {
-            try {
+            try
+            {
                 string authenticationToken = ExtractAuthorizationToken(request);
                 int bodyStartIndex = request.IndexOf("{");
 
-                if (request.Contains("POST /packages")||request.Contains("PUT /deck")) bodyStartIndex = request.IndexOf("[");
+                if (request.Contains("POST /packages") || request.Contains("PUT /deck")) bodyStartIndex = request.IndexOf("[");
 
                 if (bodyStartIndex >= 0)
                 {
@@ -62,9 +63,10 @@ namespace MonsterTradingCardGame
                         if (request.Contains("POST /users"))
                         {
                             ResponseMsg responseMsg = new ResponseMsg("users");
-                            if (!userrep.DoesUserExist())
+                            if (!userrep.DoesUserExist(userObject.Username))
                             {
                                 userrep.AddUser();
+
                                 response = responseMsg.GetResponseMessage(201);
                             }
                             else response = responseMsg.GetResponseMessage(409);
@@ -111,18 +113,19 @@ namespace MonsterTradingCardGame
                     else if (request.Contains("PUT /deck"))
                     {
                         ResponseMsg responseMsg = new ResponseMsg("deckPUT");
+
                         if (userRepository.DoesTokenExist(authenticationToken))
                         {
                             List<string> cardIds = JsonSerializer.Deserialize<List<string>>(jsonPayload);
                             bool cardnotmine = false;
-                            if(cardIds.Count == 4) 
+                            if (cardIds.Count == 4)
                             {
-                                for(int i = 0;i < 4; i++)
+                                for (int i = 0; i < 4; i++)
                                 {
-                                    if(deckRepository.DoesCardBelongToUser(authenticationToken, cardIds[i])==false) cardnotmine = true;
+                                    if (deckRepository.DoesCardBelongToUser(authenticationToken, cardIds[i]) == false) cardnotmine = true;
                                 }
 
-                                if(!cardnotmine)
+                                if (!cardnotmine)
                                 {
                                     deckRepository.DeleteUserDeck(GetUsername(authenticationToken));
                                     for (int i = 0; i < 4; i++)
@@ -138,6 +141,37 @@ namespace MonsterTradingCardGame
                         }
                         else response = responseMsg.GetResponseMessage(401);
                     }
+                    else if (request.Contains("PUT /users"))
+                    {
+                        ResponseMsg responseMsg = new ResponseMsg("userPUT");
+
+                        string username = "";
+                        int start = request.IndexOf("/users/");
+
+                        if (start != -1)
+                        {
+                            int usernameStart = start + ("/users/").Length;
+                            int spaceIndex = request.IndexOf(' ', usernameStart);
+
+                            if (spaceIndex != -1)
+                            {
+                                username = request.Substring(usernameStart, spaceIndex - usernameStart);
+                            }
+                        }
+
+                        if (userRepository.DoesUserExist(username))
+                        {
+                            if (userRepository.IsTokenValidForUsername(username, authenticationToken) || authenticationToken == adminToken)
+                            {
+                                userRepository.UpdateUserData(username, jsonPayload);
+
+                                response = responseMsg.GetResponseMessage(200);
+                            }
+                            else response = responseMsg.GetResponseMessage(401);
+                        }
+                        else response = responseMsg.GetResponseMessage(404);
+                    }
+
                 }
                 else if (request.Contains("POST /transactions/packages"))
                 {
@@ -195,7 +229,10 @@ namespace MonsterTradingCardGame
                     ResponseMsg responseMsg = new ResponseMsg("deckGET");
                     if (userRepository.DoesTokenExist(authenticationToken))
                     {
-                        string showdeck = deckRepository.GetCardsFromDeckJson(authenticationToken);
+                        string showdeck = "";
+
+                        if (request.Contains("format=plain")) showdeck = deckRepository.GetCardsFromDeck(authenticationToken, true);
+                        else showdeck = deckRepository.GetCardsFromDeck(authenticationToken, false);
 
                         if (showdeck.Length > 2)
                         {
@@ -205,6 +242,57 @@ namespace MonsterTradingCardGame
                         {
                             response = responseMsg.GetResponseMessage(204);
                         }
+                    }
+                    else response = responseMsg.GetResponseMessage(401);
+                }
+                else if (request.Contains("GET /users"))
+                {
+                    ResponseMsg responseMsg = new ResponseMsg("userGET");
+
+                    string username = "";
+                    int start = request.IndexOf("/users/");
+
+                    if (start != -1)
+                    {
+                        int usernameStart = start + ("/users/").Length;
+                        int spaceIndex = request.IndexOf(' ', usernameStart);
+
+                        if (spaceIndex != -1)
+                        {
+                            username = request.Substring(usernameStart, spaceIndex - usernameStart);
+                        }
+                    }
+
+                    if (userRepository.DoesUserExist(username))
+                    {
+                        if (userRepository.IsTokenValidForUsername(username, authenticationToken) || authenticationToken == adminToken)
+                        {
+                            string userData = userRepository.GetUserData(username);
+
+                            response = responseMsg.GetResponseMessage(200) + userData + "\r\n";
+                        }
+                        else response = responseMsg.GetResponseMessage(401);
+                    }
+                    else response = responseMsg.GetResponseMessage(404);
+                }
+                else if (request.Contains("GET /stats"))
+                {
+                    ResponseMsg responseMsg = new ResponseMsg("stats");
+
+                    if (userRepository.DoesTokenExist(authenticationToken))
+                    {
+                        response = responseMsg.GetResponseMessage(200) + userRepository.GetUserStats(authenticationToken) + "\r\n";
+
+                    }
+                    else response = responseMsg.GetResponseMessage(401);
+                }
+                else if (request.Contains("GET /scoreboard"))
+                {
+                    ResponseMsg responseMsg = new ResponseMsg("scoreboard");
+
+                    if (userRepository.DoesTokenExist(authenticationToken))
+                    {
+                        //Hier weiter
                     }
                     else response = responseMsg.GetResponseMessage(401);
                 }

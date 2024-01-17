@@ -31,7 +31,7 @@ namespace MonsterTradingCardGame.Repository
             {
                 connection.Open();
 
-                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (token, username, password, coins) VALUES (@token, @username, @password, @coins)", connection))
+                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (token, username, password, coins, elo, wins, losses) VALUES (@token, @username, @password, @coins, 0, 0, 0)", connection))
                 {
                     string token = User.Username + "-mtcgToken";
 
@@ -45,7 +45,7 @@ namespace MonsterTradingCardGame.Repository
                 connection.Close();
             }
         }
-        public bool DoesUserExist()
+        public bool DoesUserExist(string username)
         {
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             {
@@ -53,7 +53,7 @@ namespace MonsterTradingCardGame.Repository
 
                 using (NpgsqlCommand command = new NpgsqlCommand("SELECT COUNT(*) FROM users WHERE username = @username;", connection))
                 {
-                    command.Parameters.AddWithValue("@username", User.Username);
+                    command.Parameters.AddWithValue("@username", username);
 
                     int count = Convert.ToInt32(command.ExecuteScalar());
 
@@ -207,7 +207,135 @@ namespace MonsterTradingCardGame.Repository
                 }
             }
         }
+        public bool IsTokenValidForUsername(string username, string token)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
 
+                using (NpgsqlCommand command = new NpgsqlCommand(
+                    "SELECT COUNT(*) FROM users WHERE username = @username AND token = @token;", connection))
+                {
+                    command.Parameters.AddWithValue("@username", username);
+                    command.Parameters.AddWithValue("@token", token);
+
+                    int count = Convert.ToInt32(command.ExecuteScalar());
+
+                    return count > 0;
+                }
+            }
+        }
+
+        public string GetUserData(string username)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand(
+                    "SELECT image, bio, name FROM users WHERE username = @username;", connection))
+                {
+                    command.Parameters.AddWithValue("@username", username);
+
+                    using (NpgsqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            User user = new User
+                            {
+                                Image = reader.IsDBNull(0) ? null : reader.GetString(0),
+                                Bio = reader.IsDBNull(1) ? null : reader.GetString(1),
+                                Name = reader.IsDBNull(2) ? null : reader.GetString(2)
+                            };
+
+                            var result = new
+                            {
+                                Bio = user.Bio,
+                                Image = user.Image,
+                                Name = user.Name
+                            };
+
+                            return JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+                        }
+                    }
+                }
+            }
+
+            return "{}";
+        }
+
+        public bool UpdateUserData(string username, string jsonUserData)
+        {
+            try
+            {
+                User userData = JsonSerializer.Deserialize<User>(jsonUserData);
+
+                using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(
+                        "UPDATE users SET name = @name, bio = @bio, image = @image WHERE username = @username;", connection))
+                    {
+                        command.Parameters.AddWithValue("@username", username);
+                        command.Parameters.AddWithValue("@name", userData.Name);
+                        command.Parameters.AddWithValue("@bio", userData.Bio);
+                        command.Parameters.AddWithValue("@image", userData.Image);
+
+                        int rowsAffected = command.ExecuteNonQuery();
+
+                        return rowsAffected > 0;
+                    }
+                }
+            }
+            catch (JsonException ex)
+            {
+                Console.WriteLine($"Error deserializing JSON: {ex.Message}");
+                return false;
+            }
+        }
+
+        // ... (existing code)
+
+        public string GetUserStats(string token)
+        {
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(
+                        "SELECT name, elo, wins, losses FROM users WHERE token = @token;", connection))
+                    {
+                        command.Parameters.AddWithValue("@token", token);
+
+                        using (NpgsqlDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var userStats = new
+                                {
+                                    Name = reader.GetString(0),
+                                    Elo = reader.GetInt32(1),
+                                    Wins = reader.GetInt32(2),
+                                    Losses = reader.GetInt32(3)
+                                };
+
+                                return JsonSerializer.Serialize(userStats, new JsonSerializerOptions { WriteIndented = true });
+                            }
+                        }
+                    }
+                }
+
+                return "{}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting user stats: {ex.Message}");
+                return "{}";
+            }
+        }
 
         private string HashPassword(string password)
         {

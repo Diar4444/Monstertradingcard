@@ -21,9 +21,10 @@ namespace MonsterTradingCardGame.Repository
         public DeckRepository() { }
 
 
-        public string GetCardsFromDeckJson(string token)
+        public string GetCardsFromDeck(string token,bool format)
         {
             List<Card> userDeck = new List<Card>();
+            string jsonResult = "";
 
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             {
@@ -54,7 +55,19 @@ namespace MonsterTradingCardGame.Repository
                     }
                 }
             }
-            string jsonResult = JsonSerializer.Serialize(userDeck, new JsonSerializerOptions { WriteIndented = true });
+
+
+            if (format)
+            {
+                StringBuilder plainTextBuilder = new StringBuilder();
+                foreach (var card in userDeck)
+                {
+                    plainTextBuilder.AppendLine($"Id: {card.Id}, Name: {card.Name}, Damage: {card.Damage}");
+                }
+
+                jsonResult = plainTextBuilder.ToString();
+            }
+            else jsonResult = JsonSerializer.Serialize(userDeck, new JsonSerializerOptions { WriteIndented = true });
 
             return jsonResult;
         }
