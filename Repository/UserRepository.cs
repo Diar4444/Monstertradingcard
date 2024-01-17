@@ -130,7 +130,6 @@ namespace MonsterTradingCardGame.Repository
 
                 using (NpgsqlCommand command = new NpgsqlCommand("UPDATE users SET coins = @newCoins WHERE username = @username;", connection))
                 {
-
                     command.Parameters.AddWithValue("@newCoins", coins);
                     command.Parameters.AddWithValue("@username", username);
 
@@ -138,7 +137,6 @@ namespace MonsterTradingCardGame.Repository
 
                     if (rowsAffected > 0)
                     {
-                        // Update successful
                         connection.Close();
                         return true;
                     }

@@ -20,11 +20,6 @@ namespace MonsterTradingCardGame.Repository
 
         public DeckRepository() { }
 
-        public DeckRepository(string username) 
-        {
-            this.username = username;
-        }
-
 
         public string GetCardsFromDeckJson(string token)
         {
@@ -64,6 +59,64 @@ namespace MonsterTradingCardGame.Repository
             return jsonResult;
         }
 
+        public bool DoesCardBelongToUser(string token, string cardId)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
 
+                using (NpgsqlCommand command = new NpgsqlCommand(
+                    "SELECT COUNT(*) " +
+                    "FROM users " +
+                    "JOIN user_packages ON users.username = user_packages.username " +
+                    "JOIN cards ON user_packages.package_id = cards.package_id " +
+                    "WHERE users.token = @token AND cards.id = @cardId;", connection))
+                {
+                    command.Parameters.AddWithValue("@token", token);
+                    command.Parameters.AddWithValue("@cardId", cardId);
+
+                    int count = Convert.ToInt32(command.ExecuteScalar());
+
+                    return count > 0;
+                }
+            }
+        }
+
+        public bool AddCardToUserDeck(string username, string cardId)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand(
+                    "INSERT INTO deck (username, card_id) VALUES (@username, @cardId);", connection))
+                {
+                    command.Parameters.AddWithValue("@username", username);
+                    command.Parameters.AddWithValue("@cardId", cardId);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    return rowsAffected > 0;
+                }
+            }
+        }
+
+        public bool DeleteUserDeck(string username)
+        {
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (NpgsqlCommand command = new NpgsqlCommand(
+                    "DELETE FROM deck WHERE username = @username;", connection))
+                {
+                    command.Parameters.AddWithValue("@username", username);
+
+                    int rowsAffected = command.ExecuteNonQuery();
+
+                    return rowsAffected > 0;
+                }
+            }
+        }
     }
 }

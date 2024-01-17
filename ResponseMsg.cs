@@ -57,13 +57,23 @@ namespace MonsterTradingCardGame
                     { 401, "HTTP/1.1 401 Token Error\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid\"}\r\n" }
                 };
             }
-            else if (path == "deck")
+            else if (path == "deckGET")
             {
                 messages = new Dictionary<int, string>
                 {
                     { 200, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The deck has cards, the response contains these\"}\r\n" },
                     { 204, "HTTP/1.1 204 No Card\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The request was fine, but the deck doesn't have any cards\"}\r\n" },
                     { 401, "HTTP/1.1 401 Token Error\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid\"}\r\n" }
+                };
+            }
+            else if (path == "deckPUT")
+            {
+                messages = new Dictionary<int, string>
+                {
+                    { 200, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The deck has been successfully configured\"}\r\n" },
+                    { 400, "HTTP/1.1 400 Amount Error\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The provided deck did not include the required amount of cards\"}\r\n" },
+                    { 401, "HTTP/1.1 401 Token Error\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid\"}\r\n" },
+                    { 403, "HTTP/1.1 403 Not Your Card\r\nContent-Type: application/json\r\n\r\n{\"message\": \"At least one of the provided cards does not belong to the user or is not available.\"}\r\n" }
                 };
             }
         }
