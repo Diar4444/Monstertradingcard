@@ -16,7 +16,14 @@ namespace MonsterTradingCardGame.Repository
 {
     public class UserRepository
     {
-        private string connectionString = "Host=localhost;Username=postgres;Password=Halamadrid1;Database=postgres";
+        private string host = "localhost";
+        private string username = "postgres";
+        private string password = "Halamadrid1";
+        private string database = "postgres";
+        private string getConnectionString()
+        {
+            return "Host=" + host + ";Username=" + username + ";Password=" + password + ";Database=" + database;
+        }
         private User User { get; set; }
 
         public UserRepository() { }
@@ -27,7 +34,7 @@ namespace MonsterTradingCardGame.Repository
 
         public void AddUser()
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -47,7 +54,7 @@ namespace MonsterTradingCardGame.Repository
         }
         public bool DoesUserExist(string username)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -65,7 +72,7 @@ namespace MonsterTradingCardGame.Repository
 
         public bool UserLogin()
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -99,7 +106,7 @@ namespace MonsterTradingCardGame.Repository
 
         public int GetCoins(string username)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -124,7 +131,7 @@ namespace MonsterTradingCardGame.Repository
 
         public bool UpdateCoins(int coins,string username)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -152,7 +159,7 @@ namespace MonsterTradingCardGame.Repository
         {
             List<Card> userCards = new List<Card>();
 
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -181,10 +188,7 @@ namespace MonsterTradingCardGame.Repository
                     }
                 }
 
-                string jsonResult = JsonSerializer.Serialize(userCards, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
+                string jsonResult = JsonSerializer.Serialize(userCards, new JsonSerializerOptions{ WriteIndented = true });
 
                 return jsonResult;
             }
@@ -192,7 +196,7 @@ namespace MonsterTradingCardGame.Repository
 
         public bool DoesTokenExist(string token)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -209,7 +213,7 @@ namespace MonsterTradingCardGame.Repository
         }
         public bool IsTokenValidForUsername(string username, string token)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -228,7 +232,7 @@ namespace MonsterTradingCardGame.Repository
 
         public string GetUserData(string username)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -270,7 +274,7 @@ namespace MonsterTradingCardGame.Repository
             {
                 User userData = JsonSerializer.Deserialize<User>(jsonUserData);
 
-                using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
                 {
                     connection.Open();
 
@@ -295,13 +299,11 @@ namespace MonsterTradingCardGame.Repository
             }
         }
 
-        // ... (existing code)
-
         public string GetUserStats(string token)
         {
             try
             {
-                using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
                 {
                     connection.Open();
 
@@ -316,7 +318,7 @@ namespace MonsterTradingCardGame.Repository
                             {
                                 var userStats = new
                                 {
-                                    Name = reader.GetString(0),
+                                    Name = reader.IsDBNull(0) ? null : reader.GetString(0),
                                     Elo = reader.GetInt32(1),
                                     Wins = reader.GetInt32(2),
                                     Losses = reader.GetInt32(3)
@@ -334,6 +336,46 @@ namespace MonsterTradingCardGame.Repository
             {
                 Console.WriteLine($"Error getting user stats: {ex.Message}");
                 return "{}";
+            }
+        }
+
+        public string GetAllUserStatsOrderedByElo()
+        {
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
+                {
+                    connection.Open();
+
+                    using (NpgsqlCommand command = new NpgsqlCommand(
+                        "SELECT name, elo, wins, losses FROM users ORDER BY elo DESC;", connection))
+                    {
+                        List<object> userStatsList = new List<object>();
+
+                        using (NpgsqlDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                var userStats = new
+                                {
+                                    Name = reader.IsDBNull(0) ? null : reader.GetString(0),
+                                    Elo = reader.GetInt32(1),
+                                    Wins = reader.GetInt32(2),
+                                    Losses = reader.GetInt32(3)
+                                };
+
+                                userStatsList.Add(userStats);
+                            }
+                        }
+
+                        return JsonSerializer.Serialize(userStatsList, new JsonSerializerOptions { WriteIndented = true });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all user stats: {ex.Message}");
+                return "[]";
             }
         }
 

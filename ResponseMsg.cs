@@ -110,6 +110,16 @@ namespace MonsterTradingCardGame
                     { 401, "HTTP/1.1 401 Token Error\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid\"}\r\n" }
                 };
             }
+            else if (path == "battle")
+            {
+                messages = new Dictionary<int, string>
+                {
+                    { 200, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The battle has been carried out successfully.\"}\r\n" },
+                    { 401, "HTTP/1.1 401 Token Error\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid\"}\r\n" },
+                    { 402, "HTTP/1.1 402 same user\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Same User registered twice\"}\r\n" }
+
+                };
+            }
         }
 
         public string GetResponseMessage(int statusCode)

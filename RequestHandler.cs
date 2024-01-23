@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using MonsterTradingCardGame.Objects;
 using MonsterTradingCardGame.Repository;
@@ -23,6 +24,8 @@ namespace MonsterTradingCardGame
         private UserRepository userRepository = new UserRepository();
 
         private DeckRepository deckRepository = new DeckRepository();
+
+        public RequestHandler() { }
 
         public RequestHandler(string Request)
         {
@@ -127,10 +130,10 @@ namespace MonsterTradingCardGame
 
                                 if (!cardnotmine)
                                 {
-                                    deckRepository.DeleteUserDeck(GetUsername(authenticationToken));
+                                    deckRepository.DeleteUserDeck(GetUsernameByToken(authenticationToken));
                                     for (int i = 0; i < 4; i++)
                                     {
-                                        deckRepository.AddCardToUserDeck(GetUsername(authenticationToken), cardIds[i]);
+                                        deckRepository.AddCardToUserDeck(GetUsernameByToken(authenticationToken), cardIds[i]);
                                     }
 
                                     response = responseMsg.GetResponseMessage(200);
@@ -171,14 +174,13 @@ namespace MonsterTradingCardGame
                         }
                         else response = responseMsg.GetResponseMessage(404);
                     }
-
                 }
                 else if (request.Contains("POST /transactions/packages"))
                 {
                     ResponseMsg responseMsg = new ResponseMsg("transactions/packages");
                     List<int> packagelist = new List<int>();
                     int coins;
-                    string username = GetUsername(authenticationToken);
+                    string username = GetUsernameByToken(authenticationToken);
 
                     //Ersatz weil das mit token im curl script komisch ist such ich nach username direkt
 
@@ -292,7 +294,7 @@ namespace MonsterTradingCardGame
 
                     if (userRepository.DoesTokenExist(authenticationToken))
                     {
-                        //Hier weiter
+                        response = responseMsg.GetResponseMessage(200) + userRepository.GetAllUserStatsOrderedByElo() + "\r\n";
                     }
                     else response = responseMsg.GetResponseMessage(401);
                 }
@@ -303,7 +305,7 @@ namespace MonsterTradingCardGame
             }
         }
 
-        private string ExtractAuthorizationToken(string request)
+        public string ExtractAuthorizationToken(string request)
         {
             const string authorizationHeader = "Authorization: Bearer ";
             int startIndex = request.IndexOf(authorizationHeader);
@@ -322,7 +324,7 @@ namespace MonsterTradingCardGame
             return "";
         }
 
-        private string GetUsername(string token)
+        public string GetUsernameByToken(string token)
         {
             string username = "";
             int indexOfHyphen = token.IndexOf('-');
@@ -331,5 +333,7 @@ namespace MonsterTradingCardGame
             
             return username;
         }
+
+
     }
 }
