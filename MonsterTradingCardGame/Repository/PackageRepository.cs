@@ -40,11 +40,9 @@ namespace MonsterTradingCardGame.Repository
                 using (var transaction = connection.BeginTransaction())
                 {
                     try
-                    {
-                        // Save the package
+                    { 
                         SavePackage(connection, transaction, package);
 
-                        // Save each card in the package
                         foreach (var card in package.Cards)
                         {
                             SaveCard(connection, transaction, card, package.PackageId);
@@ -93,8 +91,6 @@ namespace MonsterTradingCardGame.Repository
 
         public void BuyPackage(int packageId, string username)
         {
-            Console.WriteLine(packageId);
-
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
@@ -114,7 +110,6 @@ namespace MonsterTradingCardGame.Repository
                     try
                     {
                         command.ExecuteNonQuery();
-                        Console.WriteLine($"User '{username}' assigned package ID '{packageId}'.");
                     }
                     catch (Exception ex)
                     {
@@ -127,7 +122,7 @@ namespace MonsterTradingCardGame.Repository
         }
 
 
-        private void SavePackage(NpgsqlConnection connection, NpgsqlTransaction transaction, Package package)
+        public void SavePackage(NpgsqlConnection connection, NpgsqlTransaction transaction, Package package)
         {
             using (var command = new NpgsqlCommand("INSERT INTO packages (package_id, bought) VALUES (@package_id, @bought)", connection, transaction))
             {
@@ -150,7 +145,5 @@ namespace MonsterTradingCardGame.Repository
                 command.ExecuteNonQuery();
             }
         }
-
-
     }
 }
