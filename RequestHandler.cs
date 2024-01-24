@@ -25,6 +25,8 @@ namespace MonsterTradingCardGame
 
         private DeckRepository deckRepository = new DeckRepository();
 
+        private TradingRepository tradingRepository = new TradingRepository();
+
         public RequestHandler() { }
 
         public RequestHandler(string Request)
@@ -174,6 +176,29 @@ namespace MonsterTradingCardGame
                         }
                         else response = responseMsg.GetResponseMessage(404);
                     }
+                    else if (request.Contains("POST /tradings"))
+                    {
+                        ResponseMsg responseMsg = new ResponseMsg("tradePOST");
+                        string username = GetUsernameByToken(authenticationToken);
+
+                        if (userRepository.DoesTokenExist(authenticationToken))
+                        {
+                            var userObject = JsonSerializer.Deserialize<Trade>(jsonPayload);
+
+                            if (tradingRepository.DoesUserHaveCard(username, userObject.CardToTrade))
+                            {
+                                if(!tradingRepository.DoesCardExistInTrading(userObject.CardToTrade))
+                                {
+                                    tradingRepository.AddTrade(userObject.CardToTrade, userObject.Id, userObject.Type, userObject.MinimumDamage, username);
+
+                                    response = responseMsg.GetResponseMessage(201);
+                                }
+                                else response = responseMsg.GetResponseMessage(409);
+                            }
+                            else response = responseMsg.GetResponseMessage(403);
+                        }
+                        else response = responseMsg.GetResponseMessage(401);
+                    }
                 }
                 else if (request.Contains("POST /transactions/packages"))
                 {
@@ -298,6 +323,107 @@ namespace MonsterTradingCardGame
                     }
                     else response = responseMsg.GetResponseMessage(401);
                 }
+                else if (request.Contains("GET /tradings"))
+                {
+                    ResponseMsg responseMsg = new ResponseMsg("tradeGET");
+
+                    if (userRepository.DoesTokenExist(authenticationToken))
+                    {
+                        string trades = tradingRepository.GetTrades();
+
+                        if(trades.Count() > 2)
+                        {
+                            response = responseMsg.GetResponseMessage(200) + trades + "\n";
+                        }
+                        else response = responseMsg.GetResponseMessage(205);
+                    }
+                    else response = responseMsg.GetResponseMessage(401);
+                }
+                else if (request.Contains("DELETE /tradings"))
+                {
+                    ResponseMsg responseMsg = new ResponseMsg("tradeDEL");
+
+                    string id = "";
+                    int start = request.IndexOf("/tradings/");
+
+                    if (start != -1)
+                    {
+                        int idStart = start + ("/tradings/").Length;
+                        int spaceIndex = request.IndexOf(' ', idStart);
+
+                        if (spaceIndex != -1)
+                        {
+                            id = request.Substring(idStart, spaceIndex - idStart);
+                        }
+                    }
+
+                    if(userRepository.DoesTokenExist(authenticationToken))
+                    {
+                        if (tradingRepository.DoesIdExists(id))
+                        {
+                            if(tradingRepository.DoesIdBelongToUser(id,GetUsernameByToken(authenticationToken)))
+                            {
+                                tradingRepository.DeleteTradeById(id);
+
+                                response = responseMsg.GetResponseMessage(200);
+                            }
+                            else response = responseMsg.GetResponseMessage(403);
+                        }
+                        else response = responseMsg.GetResponseMessage(404);
+                    }
+                    else response = responseMsg.GetResponseMessage(401);
+                }
+                else if (request.Contains("POST /tradings/"))
+                {
+                    ResponseMsg responseMsg = new ResponseMsg("tradeSUC");
+
+                    string id = "";
+                    int start = request.IndexOf("/tradings/");
+
+                    if (start != -1)
+                    {
+                        int idStart = start + ("/tradings/").Length;
+                        int spaceIndex = request.IndexOf(' ', idStart);
+
+                        if (spaceIndex != -1)
+                        {
+                            id = request.Substring(idStart, spaceIndex - idStart);
+                        }
+                    }
+
+
+                    if (userRepository.DoesTokenExist(authenticationToken))
+                    {
+                        if (tradingRepository.DoesIdExists(id))
+                        {
+                            if (!tradingRepository.DoesIdBelongToUser(id, GetUsernameByToken(authenticationToken)))
+                            {
+                                if (tradingRepository.DoesUserHaveCard(GetUsernameByToken(authenticationToken), ExtractCardId(request)))
+                                {
+                                    string cardtotrade = tradingRepository.GetCardToTradeById(id);
+                                    if (tradingRepository.CheckDamageSufficient(ExtractCardId(request), cardtotrade))
+                                    {
+                                        tradingRepository.DeleteTradeById(id);
+
+                                        int card1packageid = tradingRepository.GetPackageIdFromCardId(cardtotrade);
+                                        int card2packageid = tradingRepository.GetPackageIdFromCardId(ExtractCardId(request));
+
+
+                                        tradingRepository.UpdatePackageIdForCard(cardtotrade, card2packageid);
+                                        tradingRepository.UpdatePackageIdForCard(ExtractCardId(request), card1packageid);
+
+                                        response = responseMsg.GetResponseMessage(200);
+                                    }
+                                    else response = responseMsg.GetResponseMessage(411);
+                                }
+                                else response = responseMsg.GetResponseMessage(403);
+                            }
+                            else response = responseMsg.GetResponseMessage(410);
+                        }
+                        else response = responseMsg.GetResponseMessage(404);
+                    }
+                    else response = responseMsg.GetResponseMessage(401);
+                }
             }
             catch (JsonException ex)
             {
@@ -334,6 +460,18 @@ namespace MonsterTradingCardGame
             return username;
         }
 
+        private string ExtractCardId(string httpRequest)
+        {
+            int startIndex = httpRequest.IndexOf("\"") + 1;
+            int endIndex = httpRequest.IndexOf("\"", startIndex);
 
+            if (startIndex >= 0 && endIndex > startIndex)
+            {
+                string cardId = httpRequest.Substring(startIndex, endIndex - startIndex);
+                return cardId;
+            }
+
+            return null;
+        }
     }
 }

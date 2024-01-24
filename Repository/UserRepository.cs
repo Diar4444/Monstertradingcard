@@ -87,17 +87,14 @@ namespace MonsterTradingCardGame.Repository
                             string storedUsername = reader.GetString(0);
                             string storedPasswordHash = reader.GetString(1);
 
-                            // Check if the provided password matches the stored hashed password
                             if (HashPassword(User.Password) == storedPasswordHash && User.Username == storedUsername)
                             {
-                                // Passwords match
                                 connection.Close();
                                 return true;
                             }
                         }
                     }
 
-                    // No matching user or incorrect password
                     connection.Close();
                     return false;
                 }
@@ -149,7 +146,6 @@ namespace MonsterTradingCardGame.Repository
                     }
                 }
 
-                // No matching user
                 connection.Close();
                 return false;
             }
@@ -383,10 +379,8 @@ namespace MonsterTradingCardGame.Repository
         {
             using (SHA256 sha256 = SHA256.Create())
             {
-                // ComputeHash - returns byte array
                 byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
 
-                // Convert byte array to a string
                 StringBuilder builder = new StringBuilder();
                 for (int i = 0; i < bytes.Length; i++)
                 {

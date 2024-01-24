@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MonsterTradingCardGame.Repository
 {
-    public class battleRepository
+    public class BattleRepository
     {
         private static readonly object clientLock = new object();
         private static int connectedClientCount = 0;
@@ -30,7 +30,7 @@ namespace MonsterTradingCardGame.Repository
         private static List<(string, double)> user1Cards;
         private static List<(string, double)> user2Cards;
 
-        public battleRepository() { }
+        public BattleRepository() { }
 
         public static async Task<byte[]> ProcessBattlesRequestAsync(string request)
         {
@@ -56,15 +56,15 @@ namespace MonsterTradingCardGame.Repository
 
                     if (connectedClientCount == 2)
                     {
-                        semaphore.Release(2); // Release both permits
+                        semaphore.Release(2);
                     }
                 }
 
-                await semaphore.WaitAsync(); // Wait for the signal to proceed
+                await semaphore.WaitAsync(); 
 
                 lock (clientLock)
                 {
-                    connectedClientCount = 0; // Reset the connectedClientCount
+                    connectedClientCount = 0; 
                 }
 
                 //Falls zweimal der gleich token eingegeben wird
@@ -87,7 +87,7 @@ namespace MonsterTradingCardGame.Repository
             return resp;
         }
 
-        private static List<(string Name, double Damage)> GetCardsInfo(string username)
+        public static List<(string Name, double Damage)> GetCardsInfo(string username)
         {
             List<(string Name, double Damage)> deck = new List<(string, double)>();
 
@@ -116,7 +116,7 @@ namespace MonsterTradingCardGame.Repository
         }
 
 
-        private static string Battle()
+        public static string Battle()
         {
             user1Cards = GetCardsInfo(username1);
             user2Cards = GetCardsInfo(username2);
@@ -186,7 +186,6 @@ namespace MonsterTradingCardGame.Repository
             string response = $"{nameUser1} vs {nameUser2}\n";
             Console.WriteLine($"{nameUser1} vs {nameUser2}");
 
-            // Check for special cases
             if (nameUser1 == "Goblin" && nameUser2 == "Dragon")
             {
                 response += "Goblins are too afraid of Dragons to attack. Dragon wins!\n";
@@ -285,7 +284,6 @@ namespace MonsterTradingCardGame.Repository
             string response = $"{nameUser1} vs {nameUser2}\n";
             Console.WriteLine($"{nameUser1} vs {nameUser2}");
 
-            // Check for special cases
             if (nameUser1 == "Goblin" && nameUser2 == "Dragon")
             {
                 response += "Goblins are too afraid of Dragons to attack. Dragon wins!\n";
@@ -353,7 +351,7 @@ namespace MonsterTradingCardGame.Repository
             return response;
         }
 
-        private static double CalculateEffectiveness(string nameUser1, string nameUser2)
+        public static double CalculateEffectiveness(string nameUser1, string nameUser2)
         {
             Dictionary<string, string> effectivenessRules = new Dictionary<string, string>
             {
@@ -374,20 +372,20 @@ namespace MonsterTradingCardGame.Repository
                 }
             }
 
-            return 1.0; // No Effect
+            return 1.0;
         }
 
-        private static bool IsMonsterCard(string cardName)
+        public static bool IsMonsterCard(string cardName)
         {
             return cardName.EndsWith("Goblin") || cardName.EndsWith("Troll") || cardName.EndsWith("Wizard") || cardName.EndsWith("Knight") || cardName.EndsWith("Dragon") || cardName.EndsWith("FireElf") || cardName.EndsWith("Kraken");
         }
 
-        private static bool IsSpellCard(string cardName)
+        public static bool IsSpellCard(string cardName)
         {
             return cardName.EndsWith("Spell");
         }
 
-        private static void UpdateUserWinner(string username)
+        public static void UpdateUserWinner(string username)
         {
             using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
@@ -412,7 +410,6 @@ namespace MonsterTradingCardGame.Repository
             {
                 connection.Open();
 
-                // Update elo and losses attributes
                 using (NpgsqlCommand command = new NpgsqlCommand("UPDATE users SET elo = elo - @eloChange, losses = losses + @lossesChange WHERE username = @username;", connection))
                 {
                     command.Parameters.AddWithValue("@username", username);

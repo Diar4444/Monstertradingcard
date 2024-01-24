@@ -120,6 +120,50 @@ namespace MonsterTradingCardGame
 
                 };
             }
+            else if (path == "tradeGET")
+            {
+                messages = new Dictionary<int, string>
+                {
+                    { 200, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"There are trading deals available, the response contains these.\"}\r\n" },
+                    { 205, "HTTP/1.1 205 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The request was fine, but there are no trading deals available.\"}\r\n" },
+                    { 401, "HTTP/1.1 401 Error Token\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid.\"}\r\n" }
+
+                };
+            }
+            else if (path == "tradePOST")
+            {
+                messages = new Dictionary<int, string>
+                {
+                    { 201, "HTTP/1.1 201 Trade Success\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Trading deal successfully created.\"}\r\n" },
+                    { 401, "HTTP/1.1 401 Error Token\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid.\"}\r\n" },
+                    { 403, "HTTP/1.1 403 Wrong Trade\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The deal contains a card that is not owned by the user or locked in the deck.\"}\r\n" },
+                    { 409, "HTTP/1.1 409 Already Exists\r\nContent-Type: application/json\r\n\r\n{\"message\": \"A deal with this deal ID already exists..\"}\r\n" }
+                };
+            }
+            else if (path == "tradeDEL")
+            {
+                messages = new Dictionary<int, string>
+                {
+                    { 200, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Trading deal successfully deleted.\"}\r\n" },
+                    { 401, "HTTP/1.1 401 Error Token\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid.\"}\r\n" },
+                    { 403, "HTTP/1.1 403 Wrong Trade\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The deal contains a card that is not owned by the user.\"}\r\n" },
+                    { 404, "HTTP/1.1 404 ID Not Found\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The provided deal ID was not found.\"}\r\n" },
+                    { 409, "HTTP/1.1 409 Already Exists\r\nContent-Type: application/json\r\n\r\n{\"message\": \"A deal with this deal ID already exists.\"}\r\n" }
+                };
+            }
+            else if (path == "tradeSUC")
+            {
+                messages = new Dictionary<int, string>
+                {
+                    { 200, "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Trading deal successfully executed.\"}\r\n" },
+                    { 401, "HTTP/1.1 401 Error Token\r\nContent-Type: application/json\r\n\r\n{\"message\": \"Access token is missing or invalid.\"}\r\n" },
+                    { 403, "HTTP/1.1 403 Wrong Trade\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The offered card is not owned by the user, or the requirements are not met (Type, MinimumDamage), or the offered card is locked in the deck.\"}\r\n" },
+                    { 404, "HTTP/1.1 404 ID Not Found\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The provided deal ID was not found.\"}\r\n" },
+                    { 410, "HTTP/1.1 410 User Trade Failed\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The User wanted to Trade with himself.\"}\r\n" },
+                    { 411, "HTTP/1.1 411 Damage To Low\r\nContent-Type: application/json\r\n\r\n{\"message\": \"The Damage of the Provided Card is too low.\"}\r\n" }
+                };
+            }
+
         }
 
         public string GetResponseMessage(int statusCode)

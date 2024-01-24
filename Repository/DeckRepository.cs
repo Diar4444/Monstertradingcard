@@ -11,7 +11,15 @@ namespace MonsterTradingCardGame.Repository
 {
     public class DeckRepository
     {
-        private string connectionString = "Host=localhost;Username=postgres;Password=Halamadrid1;Database=postgres";
+        private string host = "localhost";
+        private string usernamedb = "postgres";
+        private string password = "Halamadrid1";
+        private string database = "postgres";
+
+        private string getConnectionString()
+        {
+            return "Host=" + host + ";Username=" + usernamedb + ";Password=" + password + ";Database=" + database;
+        }
 
         private string username;
 
@@ -26,7 +34,7 @@ namespace MonsterTradingCardGame.Repository
             List<Card> userDeck = new List<Card>();
             string jsonResult = "";
 
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -74,7 +82,7 @@ namespace MonsterTradingCardGame.Repository
 
         public bool DoesCardBelongToUser(string token, string cardId)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -97,7 +105,7 @@ namespace MonsterTradingCardGame.Repository
 
         public bool AddCardToUserDeck(string username, string cardId)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 
@@ -116,7 +124,7 @@ namespace MonsterTradingCardGame.Repository
 
         public bool DeleteUserDeck(string username)
         {
-            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            using (NpgsqlConnection connection = new NpgsqlConnection(getConnectionString()))
             {
                 connection.Open();
 

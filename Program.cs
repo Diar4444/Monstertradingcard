@@ -59,7 +59,7 @@ namespace MonsterTradingCardGame
 
                         if (request.Contains("POST /battles"))
                         {
-                            resp = await battleRepository.ProcessBattlesRequestAsync(request);
+                            resp = await BattleRepository.ProcessBattlesRequestAsync(request);
                         }
                         else
                         {

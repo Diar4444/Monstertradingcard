@@ -15,8 +15,14 @@ namespace MonsterTradingCardGame.Repository
         private string password = "Halamadrid1";
         private string database = "postgres";
 
+        private string getConnectionString()
+        {
+            return "Host=" + host + ";Username=" + username + ";Password=" + password + ";Database=" + database;
+        }
+
         public DBinitRepository()
         {
+            DropTable("tradings");
             DropTable("deck");
             DropTable("user_packages");
             DropTable("cards");
@@ -28,11 +34,7 @@ namespace MonsterTradingCardGame.Repository
             CreateTable("cards", "CREATE TABLE IF NOT EXISTS cards (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255) NOT NULL, damage DOUBLE PRECISION NOT NULL, package_id INTEGER REFERENCES packages(package_id));");
             CreateTable("user_packages", "CREATE TABLE IF NOT EXISTS user_packages (username VARCHAR(255) REFERENCES users(username), package_id INT REFERENCES packages(package_id), PRIMARY KEY (username, package_id));");
             CreateTable("deck", "CREATE TABLE IF NOT EXISTS deck (username VARCHAR(255) REFERENCES users(username),card_id VARCHAR(255) REFERENCES cards(id),PRIMARY KEY (username, card_id));");
-        }
-
-        private string getConnectionString()
-        {
-            return "Host="+host+";Username="+username+";Password="+password+";Database="+database;
+            CreateTable("tradings", "CREATE TABLE IF NOT EXISTS tradings (id VARCHAR(255) PRIMARY KEY, cardtotrade VARCHAR(255) NOT NULL, card_type VARCHAR(255), MinimumDamage double PRECISION, username VARCHAR(255) REFERENCES users(username));");
         }
 
         private void DropTable(string tableName)
