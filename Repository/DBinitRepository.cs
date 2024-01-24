@@ -18,13 +18,11 @@ namespace MonsterTradingCardGame.Repository
         public DBinitRepository()
         {
             DropTable("deck");
-            DropTable("battle");
             DropTable("user_packages");
             DropTable("cards");
             DropTable("packages");
             DropTable("users");
 
-            CreateTable("battle","CREATE TABLE IF NOT EXISTS battle (battleID SERIAL PRIMARY KEY, username varchar(255), player2Username varchar(255), winnerUsername varchar(255), FOREIGN KEY (player1Username) REFERENCES users(username), FOREIGN KEY (player2Username) REFERENCES users(username), FOREIGN KEY (winnerUsername) REFERENCES users(username)\r\n);");
             CreateTable("users", "CREATE TABLE IF NOT EXISTS users (token varchar(255) ,username VARCHAR(255) NOT NULL PRIMARY KEY ,password VARCHAR(255) NOT NULL,coins int NOT NULL ,name VARCHAR(255) ,bio VARCHAR(255) ,image VARCHAR(255) ,elo int NOT NULL ,wins int NOT NULL ,losses int NOT NULL);");
             CreateTable("packages", "CREATE TABLE IF NOT EXISTS packages (package_id SERIAL PRIMARY KEY, bought BOOLEAN NOT NULL);");
             CreateTable("cards", "CREATE TABLE IF NOT EXISTS cards (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255) NOT NULL, damage DOUBLE PRECISION NOT NULL, package_id INTEGER REFERENCES packages(package_id));");

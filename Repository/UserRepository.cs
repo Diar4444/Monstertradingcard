@@ -38,7 +38,7 @@ namespace MonsterTradingCardGame.Repository
             {
                 connection.Open();
 
-                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (token, username, password, coins, elo, wins, losses) VALUES (@token, @username, @password, @coins, 0, 0, 0)", connection))
+                using (NpgsqlCommand command = new NpgsqlCommand("INSERT INTO users (token, username, password, coins, elo, wins, losses) VALUES (@token, @username, @password, @coins, 100, 0, 0)", connection))
                 {
                     string token = User.Username + "-mtcgToken";
 
